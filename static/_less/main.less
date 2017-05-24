@@ -1,0 +1,123 @@
+// out: ../css/main.css, compress: true
+
+body {
+    background-color: #0a0a0a;
+}
+
+.progress-bar-custom {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 10px;
+    width: 0;
+    background-color: green;
+    z-index: 99999;
+    transition: width 0.3s linear;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+}
+
+.custom-ads-wrapper {
+
+    text-align: center;
+
+    >img {
+        max-width: 935px;
+        position: relative;
+        z-index: -1;
+    }
+
+    &.showcase {
+        background-color: #0a0a0a;
+        opacity: 0.3;
+    }
+
+    &.initial {
+        background-image: url(/static/images/background.jpg);
+        background-size: cover;
+        background-position: right center;
+        height: 100vh;
+
+        >img {
+            display: none;
+            opacity: 0;
+
+            transition: all ease-in-out 1s;
+        }
+    }
+}
+
+.container {
+    position: relative;
+
+    #video {
+        width: 100%;
+        border-radius: 4px;
+        margin-bottom: -5px;
+    }
+
+    #canvas,
+    #results {
+        top: 0;
+        width: 100%;
+    }
+
+    &.face {
+        position: fixed;
+        top: 25px;
+        left: 10px;
+
+        &.center {
+            width: 100%;
+            left: 0;
+        }
+    }
+
+    .panel {
+        border: 5px solid #fff;
+    }
+}
+
+.info-footer {
+    position: absolute;
+    bottom: 0;
+    width: 100%;
+    padding: 5px 15px;
+    background-color: rgba(0, 0, 0, 0.51);
+    color: #fff;
+    border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;
+    display: none;
+}
+
+#results-panel {
+    max-height: 562px;
+    overflow-y: scroll;
+}
+
+.offer-panel {
+    margin-bottom: 10px;
+    color: #ececec;
+    padding: 15px;
+    border-radius: 4px;
+}
+
+/* --- CLEARFIX --- */
+.clearfix() {
+    *zoom: 1;
+
+    &:before,
+    &:after {
+        display: table;
+        line-height: 0;
+        content: "";
+    }
+
+    &:after {
+        clear: both;
+    }
+}
+
+.clearfix {
+    .clearfix()
+}
