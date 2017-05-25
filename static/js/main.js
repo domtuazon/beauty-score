@@ -27,48 +27,40 @@ $(document).ready(function() {
         });
     }
 
-    $('#pause').on('click', function() {
-        if (playing) {
-            playing = false;
-            // alert(playing)
-            // startCapture();
-        } else {
-            playing = true;
-            // alert(playing)
-        }
+    $('#capture').on('click', function() {
+        capture();
     });
 
 });
 
 
 
-function startCapture() {
-    // Capture a photo every n seconds. (n = refreshRate set)
-    setTimeout(function() {
-        resultsContext.clearRect(0,0,resultsCanvas.width, resultsCanvas.height);
-        var vidWidth = $('#video').width();
-        var vidHeight = $('#video').height();
+function capture() {
+  console.log('capture');
+  resultsContext.clearRect(0,0,resultsCanvas.width, resultsCanvas.height);
+  var vidWidth = $('#video').width();
+  var vidHeight = $('#video').height();
 
-        context.canvas.width = vidWidth;
-        context.canvas.height = vidHeight;
-        resultsContext.canvas.width = vidWidth;
-        resultsContext.canvas.height = vidHeight;
-        resultsContext.strokeStyle="yellow";
-        resultsContext.lineWidth = "7";
+  context.canvas.width = vidWidth;
+  context.canvas.height = vidHeight;
+  resultsContext.canvas.width = vidWidth;
+  resultsContext.canvas.height = vidHeight;
+  resultsContext.strokeStyle="yellow";
+  resultsContext.lineWidth = "7";
 
-        context.drawImage(video, 0, 0, canvas.width, canvas.height);
-        // var imgByte = context.getImageData(0, 0, 640, 480);
+  context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-        var imgByte = canvas.toDataURL('image/JPEG')
-        // console.log(imgByte)
-        if (playing) {
-            sendToFaceApi(imgByte);
-        } else {
-            // alert('stopped');
-            console.log('stopped');
-        }
-
-    }, refreshRate)
+  var imgByte = canvas.toDataURL('image/JPEG');
+  // console.log(imgByte.replace('data:image/jpeg;base64,', ''));
+  sendToFaceApi(imgByte);
+  // console.log(makeblob(imgByte));
+  $.ajax({
+      url: "/save-image",
+      type: "POST",
+      data: imgByte.replace('data:image/jpeg;base64,', ''),
+      processData: false
+  })
+  // console.log(imgByte)
 }
 
 function sendToFaceApi(imgByte) {
@@ -95,13 +87,16 @@ function sendToFaceApi(imgByte) {
     })
     .done(function(data) {
         console.log(data);
-        if(data[0]) {
-            drawFaceRectangle(data);
-            checkMatchedFaces(data);
-            getAdsByDemographic(data[0].faceAttributes.age, data[0].faceAttributes.gender)
-        }
 
-        startCapture();
+        // draw the dots to the face, then add beauty score
+
+        // if(data[0]) {
+        //     drawFaceRectangle(data);
+        //     checkMatchedFaces(data);
+        //     getAdsByDemographic(data[0].faceAttributes.age, data[0].faceAttributes.gender)
+        // }
+
+        // startCapture();
     })
     .fail(function(err) {
         console.log(err)
