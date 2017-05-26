@@ -37,9 +37,20 @@
         <div class="panel panel-default">
           <div class="panel-body text-center">
             <h1>Beauty Score</h1>
-            <h1 id="beauty-score" class="big">8.81</h1>
+            <h1 id="beauty-score" class="big">--</h1>
             <hr>
             <h4>Age: <span id="age">23.3</span>, Gender: <span id="gender">Male</span></h4>
+            <div class="text-left show-input" style="display: none;">
+              <h1>Here's why:</h1>
+              <span id="result-details"></span>
+            </div>
+            <div class="hide-input">
+              <textarea name="" id="result-textarea" cols="30" rows="10" class="form-control"></textarea>
+              <p class="text-right">
+                <br>
+                <button id="submit-results" class="btn btn-default">Submit</button>
+              </p>
+            </div>
           </div>
         </div>
       </div>

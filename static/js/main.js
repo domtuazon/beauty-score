@@ -1,14 +1,12 @@
 var refreshRate = 1500 // every 3
 var playing = true;
 // Elements for taking the snapshot
+var gender;
 var canvas = document.getElementById('canvas');
 var resultsCanvas = document.getElementById('results')
 var context = canvas.getContext('2d');
 var resultsContext = resultsCanvas.getContext('2d');
 var video = document.getElementById('video');
-var currentFace = [];
-var averageAge = [];
-var genderArr = [];
 var pauseCapture = null;
 
 var faceCoordinates = [];
@@ -35,9 +33,24 @@ $(document).ready(function() {
         manualCoords.length = 0;
     });
 
+    $('#submit-results').on('click', function() {
+      var htmlResult = $('#result-textarea').val();
+      htmlResult = htmlResult.replace('h=Thank You&m=Success.&results=', '');
+      htmlResult = htmlResult.replace(/<BR>/g, '');
+
+      var parsedhtml = $.parseHTML(htmlResult);
+      xx = $(parsedhtml);
+      console.log(xx);
+      // ewwww this code. please fix
+      $('#beauty-score').text($(parsedhtml[1]).text().replace('You are a ','').replace(' out of 10.  Here\'s why:', ''))
+      $('#result-details').html(parsedhtml[3]);
+      $('.show-input').css('display', 'block');
+      $('.hide-input').css('display', 'none');
+    });
+
 });
 
-
+var xx;
 
 function capture() {
   resultsContext.clearRect(0,0,resultsCanvas.width, resultsCanvas.height);
@@ -91,6 +104,9 @@ function sendToFaceApi(imgByte) {
     })
     .done(function(data) {
         console.log(data);
+        $('#age').html(data[0].faceAttributes.age);
+        $('#gender').html(data[0].faceAttributes.gender);
+        gender = data[0].faceAttributes.gender.charAt(0);
 
         drawFaceCoordinates(data);
 
@@ -143,8 +159,36 @@ $('#results').on('click', function(e) {
     $('#video-holder').removeClass('col-md-offset-3').addClass('col-md-offset-1');
 
     determineManualPoints();
+
+    getBeautyScore();
   }
 });
+
+function getBeautyScore() {
+  // prepare coordinates list
+  var qstring = faceCoordinates.topOfForehead.x + ', ' + faceCoordinates.topOfForehead.y + '|' +
+                faceCoordinates.leftEarTop.x + ', ' + faceCoordinates.leftEarTop.y + '|' +
+                faceLandMarks.eyeLeftOuter.x + ', ' + faceLandMarks.eyeLeftOuter.y + '|' +
+                faceLandMarks.eyeLeftInner.x + ', ' + faceLandMarks.eyeLeftInner.y + '|' +
+                faceCoordinates.topOfNose.x + ', ' + faceCoordinates.topOfNose.y + '|' +
+                faceLandMarks.eyeRightInner.x + ', ' + faceLandMarks.eyeRightInner.y + '|' +
+                faceLandMarks.eyeRightOuter.x + ', ' + faceLandMarks.eyeRightOuter.y + '|' +
+                faceCoordinates.rightEarTop.x + ', ' + faceCoordinates.rightEarTop.y + '|' +
+                faceCoordinates.leftEarBottom.x + ', ' + faceCoordinates.leftEarBottom.y + '|' +
+                faceLandMarks.noseLeftAlarOutTip.x + ', ' + faceLandMarks.noseLeftAlarOutTip.y + '|' +
+                faceLandMarks.noseTip.x + ', ' + faceLandMarks.noseTip.y + '|' +
+                faceLandMarks.noseRightAlarOutTip.x + ', ' + faceLandMarks.noseRightAlarOutTip.y + '|' +
+                faceCoordinates.rightEarBottom.x + ', ' + faceCoordinates.rightEarBottom.y + '|' +
+                faceLandMarks.mouthLeft.x + ', ' + faceLandMarks.mouthLeft.y + '|' +
+                faceLandMarks.upperLipBottom.x + ', ' + faceLandMarks.upperLipBottom.y + '|' +
+                faceLandMarks.mouthRight.x + ', ' + faceLandMarks.mouthRight.y + '|' +
+                faceCoordinates.bottomOfChin.x + ', ' + faceCoordinates.bottomOfChin.y + '|';
+
+  $('#result-textarea').val(qstring);
+
+  // console.log(qstring);
+
+}
 
 function determineManualPoints() {
   var yMax = Math.max.apply(null, manualCoords.map(function(coords) { return coords.y }));
@@ -176,26 +220,35 @@ function determineManualPoints() {
   console.log(leftEarCoords);
 
   if(leftEarCoords[0].y >= leftEarCoords[1].y) {
-    faceCoordinates.leftEarTop = leftEarCoords[0];
-    faceCoordinates.leftEarBottom = leftEarCoords[1];
-  } else {
     faceCoordinates.leftEarTop = leftEarCoords[1];
     faceCoordinates.leftEarBottom = leftEarCoords[0];
+  } else {
+    faceCoordinates.leftEarTop = leftEarCoords[0];
+    faceCoordinates.leftEarBottom = leftEarCoords[1];
   }
 
-  console.log(faceCoordinates);
-  // faceCoordinates.push({
-  //   "leftEarTop": { "x": manualCoords[0].x, "y": coords.y }
-  // });
+  var rightEarCoords = manualCoords.splice(manualCoords.length-2, 2);
+  console.log(rightEarCoords);
 
-  console.log('sup');
-  $.each(manualCoords, function(key, val) {
-      console.log(val);
-  });
+  if(rightEarCoords[0].y >= rightEarCoords[1].y) {
+    faceCoordinates.rightEarTop = rightEarCoords[1];
+    faceCoordinates.rightEarBottom = rightEarCoords[0];
+  } else {
+    faceCoordinates.rightEarTop = rightEarCoords[0];
+    faceCoordinates.rightEarBottom = rightEarCoords[1];
+  }
+
+  // only left is the top of nose
+  faceCoordinates.topOfNose = manualCoords[0];
+
+  console.log(faceCoordinates);
 }
+
+var faceLandMarks;
 
 function drawFaceCoordinates(data) {
   var flm = data[0].faceLandmarks;
+  faceLandMarks = flm;
 
   $.each(flm, function(key, val) {
     drawCoordinates(val.x, val.y);
