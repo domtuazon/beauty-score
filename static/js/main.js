@@ -11,6 +11,11 @@ var averageAge = [];
 var genderArr = [];
 var pauseCapture = null;
 
+var faceCoordinates = [];
+
+// face drawing points
+var pointSize = 3;
+var manualCoords = [];
 
 $(document).ready(function() {
     // Grab elements, create settings, etc.
@@ -22,13 +27,12 @@ $(document).ready(function() {
         navigator.mediaDevices.getUserMedia({ video: true }).then(function(stream) {
             video.src = window.URL.createObjectURL(stream);
             video.play();
-
-            // startCapture();
         });
     }
 
     $('#capture').on('click', function() {
         capture();
+        manualCoords.length = 0;
     });
 
 });
@@ -36,7 +40,6 @@ $(document).ready(function() {
 
 
 function capture() {
-  console.log('capture');
   resultsContext.clearRect(0,0,resultsCanvas.width, resultsCanvas.height);
   var vidWidth = $('#video').width();
   var vidHeight = $('#video').height();
@@ -51,16 +54,17 @@ function capture() {
   context.drawImage(video, 0, 0, canvas.width, canvas.height);
 
   var imgByte = canvas.toDataURL('image/JPEG');
-  // console.log(imgByte.replace('data:image/jpeg;base64,', ''));
   sendToFaceApi(imgByte);
-  // console.log(makeblob(imgByte));
+
   $.ajax({
       url: "/save-image",
       type: "POST",
       data: imgByte.replace('data:image/jpeg;base64,', ''),
       processData: false
-  })
-  // console.log(imgByte)
+  });
+
+  // show captured image.
+  $('#canvas').css('visibility', 'visible');
 }
 
 function sendToFaceApi(imgByte) {
@@ -88,15 +92,9 @@ function sendToFaceApi(imgByte) {
     .done(function(data) {
         console.log(data);
 
-        // draw the dots to the face, then add beauty score
+        drawFaceCoordinates(data);
 
-        // if(data[0]) {
-        //     drawFaceRectangle(data);
-        //     checkMatchedFaces(data);
-        //     getAdsByDemographic(data[0].faceAttributes.age, data[0].faceAttributes.gender)
-        // }
-
-        // startCapture();
+        $('.info-footer').fadeIn();
     })
     .fail(function(err) {
         console.log(err)
@@ -126,39 +124,103 @@ var makeblob = function (dataURL) {
     return new Blob([uInt8Array], { type: contentType });
 }
 
-var drawFaceCoordinates = function(data) {
+// BEGIN drawing face coordinates
 
+$('#results').on('click', function(e) {
+  /* we only need additional 6 points for our score.
+   *  points are:
+   *  top of the head, bottom of chin, top of nose
+   *  top left ear, bottom left ear,
+   *  top right ear, bottom right */
+
+  if(manualCoords.length < 7) {
+    getPosition(e);
+  }
+
+  // on the 6th click, process results and show result panel
+  if(manualCoords.length == 7) {
+    $('#results-holder').addClass('col-md-4').fadeIn();
+    $('#video-holder').removeClass('col-md-offset-3').addClass('col-md-offset-1');
+
+    determineManualPoints();
+  }
+});
+
+function determineManualPoints() {
+  var yMax = Math.max.apply(null, manualCoords.map(function(coords) { return coords.y }));
+  var yMin = Math.min.apply(null, manualCoords.map(function(coords) { return coords.y }));
+  var xMax = Math.max.apply(null, manualCoords.map(function(coords) { return coords.x }));
+  var xMin = Math.min.apply(null, manualCoords.map(function(coords) { return coords.x }));
+
+  // get top of head
+  manualCoords.map(function(coords) {
+    if(coords.y == yMin) {
+      faceCoordinates.topOfForehead = coords;
+    }
+
+    if(coords.y == yMax) {
+      faceCoordinates.bottomOfChin = coords;
+    }
+  });
+  // remove top of head from array
+  manualCoords = $.grep(manualCoords, function(el, idx) {return el.y == yMin}, true);
+  // remove chin from array
+  manualCoords = $.grep(manualCoords, function(el, idx) {return el.y == yMax}, true);
+
+  // rearrange objects
+  manualCoords.sort(function(a, b) {
+    return parseFloat(a.x) - parseFloat(b.x);
+  });
+
+  var leftEarCoords = manualCoords.splice(0, 2);
+  console.log(leftEarCoords);
+
+  if(leftEarCoords[0].y >= leftEarCoords[1].y) {
+    faceCoordinates.leftEarTop = leftEarCoords[0];
+    faceCoordinates.leftEarBottom = leftEarCoords[1];
+  } else {
+    faceCoordinates.leftEarTop = leftEarCoords[1];
+    faceCoordinates.leftEarBottom = leftEarCoords[0];
+  }
+
+  console.log(faceCoordinates);
+  // faceCoordinates.push({
+  //   "leftEarTop": { "x": manualCoords[0].x, "y": coords.y }
+  // });
+
+  console.log('sup');
+  $.each(manualCoords, function(key, val) {
+      console.log(val);
+  });
 }
 
-var drawFaceRectangle = function(data) {
-    // console.log(data);
+function drawFaceCoordinates(data) {
+  var flm = data[0].faceLandmarks;
 
-    var frect = data[0].faceRectangle;
-
-    resultsContext.beginPath();
-    resultsContext.rect(frect.left, frect.top, frect.width, frect.height );
-    resultsContext.stroke();
-
-    // input results text
-    // $('#age').html(parseInt(data[0].faceAttributes.age))
-    // $('#gender').html(data[0].faceAttributes.gender)
-    // if(data[0].faceAttributes.glasses != 'NoGlasses') {
-    //     $('#glasses').html('| Wearing ' + data[0].faceAttributes.glasses)
-    // } else {
-    //     $('#glasses').html('');
-    // }
-    // if(data[0].faceAttributes.smile > .5)
-    //     $('#smile').html('| Smiling')
-    //
-    // $('.info-footer').show("slow");
-    //
-    // for (var i = 0; i < 2; i++) {
-    //     randomColor = (function(m,s,c){return (c ? arguments.callee(m,s,c-1) : '#') + s[m.floor(m.random() * s.length)]})(Math,'0123456789ABCDEF',5)
-    //     setTimeout(function() {
-    //         $('<div class="offer-panel" style="background-color: '+randomColor+'">Test Offer</div>').hide()
-    //                 .prependTo('#results-panel').show('slow');
-    //
-    //     }, 800 * i)
-    // }
-
+  $.each(flm, function(key, val) {
+    drawCoordinates(val.x, val.y);
+  });
 }
+
+function getPosition(event){
+     var rect = canvas.getBoundingClientRect();
+     var x = event.clientX - rect.left;
+     var y = event.clientY - rect.top;
+
+     manualCoords.push({ 'x': x, 'y': y });
+     console.log({ 'x': x, 'y': y });
+     drawCoordinates(x,y);
+}
+
+function drawCoordinates(x,y){
+  	var ctx = document.getElementById("canvas").getContext("2d");
+
+
+  	ctx.fillStyle = "#ff2626"; // Red color
+
+    ctx.beginPath();
+    ctx.arc(x, y, pointSize, 0, Math.PI * 2, true);
+    ctx.fill();
+}
+
+// END drawing face coordinates
